@@ -47,7 +47,7 @@ namespace kg1lab
         private bool isinbounds(int a, int b)
         {
             bool ok = false;
-            if (a > 0 + 1 && b > 0 + 1 && a < pictureboxwidth - 1 && b < pictureboxheight - 1)
+            if (a > 0 && b > 0 && a < pictureboxwidth-1 && b < pictureboxheight-1)
                 ok = true;
             return ok;
         }
@@ -84,6 +84,9 @@ namespace kg1lab
 
         private void Fillmethod(Bitmap image, int x, int y)
         {
+            bool[,] check = new bool[windowsize.Width, windowsize.Height];
+            check.Initialize();
+
             Color currentColor = image.GetPixel(x, y);
             if ( currentColor != selectedColor )
             {
@@ -104,31 +107,35 @@ namespace kg1lab
                     int cy = currentpoint.Y;
                 
                         fillPoints.RemoveAt(fillPoints.Count - 1);
-
+                    if (!check[cx + 1, cy])
                         if (colorcmp(image.GetPixel(cx + 1, cy), currentColor) && isinbounds(cx + 1, cy) )
                             {
                                 fillPoints.Add(new Point (cx + 1, cy) );
+                                check[cx + 1, cy] = true;
                             if (image.GetPixel(cx + 1, cy) == currentColor)
                                 image.SetPixel(cx + 1, cy, selectedColor);
                         }
-                    
+                    if (!check[cx - 1, cy])
                         if (colorcmp(image.GetPixel(cx - 1, cy), currentColor) && isinbounds(cx - 1, cy) )
                             {
                                 fillPoints.Add(new Point (cx - 1, cy) );
+                                check[cx - 1, cy] = true;
                             if (image.GetPixel(cx - 1, cy) == currentColor)
                                 image.SetPixel(cx - 1, cy, selectedColor);
                         }
-
+                    if (!check[cx, cy - 1])
                         if (colorcmp(image.GetPixel(cx, cy - 1), currentColor) && isinbounds(cx, cy - 1) )
                             {
                                 fillPoints.Add(new Point (cx, cy - 1) );
+                                check[cx, cy - 1] = true;
                             if (image.GetPixel(cx, cy - 1) == currentColor)
                                 image.SetPixel(cx, cy - 1, selectedColor);
                         }
-
+                    if (!check[cx, cy + 1])
                         if (colorcmp(image.GetPixel(cx, cy + 1), currentColor) && isinbounds(cx, cy + 1) )
                             {
                                 fillPoints.Add(new Point (cx, cy + 1) );
+                                check[cx, cy + 1] = true;
                             if (image.GetPixel(cx, cy + 1) == currentColor)
                                 image.SetPixel(cx, cy + 1, selectedColor);
                         }
@@ -238,7 +245,8 @@ namespace kg1lab
                 pictureBox1.DrawToBitmap(bitmap, windowsize);
                 Fillmethod(bitmap, e.X, e.Y);
                 //pictureBox1.Image = bmp;
-                bitmap = (Bitmap)pictureBox1.Image.Clone();
+                pictureBox1.Image = bitmap;
+                //bitmap = (Bitmap)pictureBox1.Image.Clone();
                 Invalidate();
             }
         }
@@ -265,8 +273,8 @@ namespace kg1lab
             {
                 if (e.Button == MouseButtons.Left)
                 {
-                    linePoints.Add(e.Location);
                     pictureBox1.DrawToBitmap(bitmap, windowsize);
+                    linePoints.Add(e.Location);
                 }
             }
             else if (selected_instrument == instrument.rect)
@@ -280,7 +288,7 @@ namespace kg1lab
         private void button6_Click(object sender, EventArgs e)
         {
             change_size();
-            windowsize = new Rectangle(0, 0, pictureboxwidth, pictureboxheight);
+            //windowsize = new Rectangle(0, 0, pictureboxwidth, pictureboxheight);
         }
 
         private void hScrollBar1_Scroll(object sender, ScrollEventArgs e)
