@@ -29,6 +29,9 @@ namespace kg1lab
             pen,
             line,
             rect,
+            ellipse,
+            erase,
+            text,
             fill,
             none
         }
@@ -146,16 +149,25 @@ namespace kg1lab
         }
 
         private void button1_Click(object sender, EventArgs e)
-        {   selected_instrument = instrument.pen;     }
+        {   selected_instrument = instrument.pen;       }
 
         private void button2_Click(object sender, EventArgs e)
-        {   selected_instrument = instrument.line;    }
+        {   selected_instrument = instrument.line;      }
 
         private void button3_Click(object sender, EventArgs e)
-        {   selected_instrument = instrument.fill;    }
+        {   selected_instrument = instrument.fill;      }
 
         private void button5_Click(object sender, EventArgs e)
-        {   selected_instrument = instrument.rect;    }
+        {   selected_instrument = instrument.rect;      }
+
+        private void button7_Click(object sender, EventArgs e)
+        {   selected_instrument = instrument.ellipse;   }
+
+        private void button10_Click(object sender, EventArgs e)
+        {   selected_instrument = instrument.erase;     }
+
+        private void button11_Click(object sender, EventArgs e)
+        {   selected_instrument = instrument.text;      }
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -189,7 +201,13 @@ namespace kg1lab
                 using (var pen = new Pen(selectedColor, thickness) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round })
                         e.Graphics.DrawLines(pen, linePoints.ToArray());
             }
-            else if (selected_instrument == instrument.rect)
+            else if (selected_instrument == instrument.erase)
+            {
+                if (linePoints.Count > 1)
+                    using (var pen = new Pen( Color.White , thickness) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round })
+                        e.Graphics.DrawLines(pen, linePoints.ToArray());
+            }
+            else if (selected_instrument == instrument.rect || selected_instrument == instrument.ellipse)
             {
                 if (linePoints.Count > 1)
                 {
@@ -210,20 +228,39 @@ namespace kg1lab
                     { ymin = B.Y; ymax = A.Y; }
                     else
                     { ymin = A.Y; ymax = B.Y; }
+                    if (selected_instrument == instrument.rect)
+                    {
+                        Rectangle rect_todraw = new Rectangle();
 
-                    Rectangle rect_todraw = new Rectangle();
+                        rect_todraw = new Rectangle(xmin, ymin, Math.Abs(A.X - B.X), Math.Abs(A.Y - B.Y));
 
-                    rect_todraw = new Rectangle(xmin, ymin, Math.Abs(A.X - B.X), Math.Abs(A.Y - B.Y));
+                        using (var pen = new Pen(selectedColor, thickness) )
+                                e.Graphics.DrawRectangle (pen, rect_todraw);
+                    }
+                    else
+                        if (selected_instrument == instrument.ellipse)
+                        {
+                            Rectangle rect_todraw = new Rectangle();
 
-                    using (var pen = new Pen(selectedColor, thickness) )
-                            e.Graphics.DrawRectangle (pen, rect_todraw);
-                }     
+                            rect_todraw = new Rectangle(xmin, ymin, Math.Abs(A.X - B.X), Math.Abs(A.Y - B.Y));
+
+                            using (var pen = new Pen(selectedColor, thickness))
+                                e.Graphics.DrawEllipse (pen, rect_todraw);
+                        }
+
+                }
             }
 
-            if (selected_instrument == instrument.line || selected_instrument == instrument.rect)
+            if (selected_instrument == instrument.line || selected_instrument == instrument.rect || selected_instrument == instrument.ellipse)
             {
                 linePoints.Clear();
                 linePoints.Add(startpoint);
+            }
+
+            if (selected_instrument == instrument.text)
+            {
+                e.Graphics.DrawString(textBox3.Text, new Font("Arial", 14), Brushes.Black, startpoint.X, startpoint.Y);
+                linePoints.Clear();
             }
         }
 
@@ -231,13 +268,21 @@ namespace kg1lab
         {
             linePoints.Clear();
 
-            if (selected_instrument == instrument.line || selected_instrument == instrument.rect || selected_instrument == instrument.pen)
+            if (selected_instrument == instrument.line || selected_instrument == instrument.rect
+                || selected_instrument == instrument.ellipse || selected_instrument == instrument.pen
+                || selected_instrument == instrument.erase)
             {
                 if (e.Button == MouseButtons.Left)
                 {
                     linePoints.Add(e.Location);
                     startpoint = e.Location;
                 }
+            }
+
+            if (selected_instrument == instrument.text)
+            {
+                startpoint = e.Location;
+                pictureBox1.Invalidate();
             }
 
             if (selected_instrument == instrument.fill)
@@ -247,13 +292,15 @@ namespace kg1lab
                 //pictureBox1.Image = bmp;
                 pictureBox1.Image = bitmap;
                 //bitmap = (Bitmap)pictureBox1.Image.Clone();
-                Invalidate();
+                //Invalidate();
             }
         }
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            if (selected_instrument == instrument.pen || selected_instrument == instrument.line || selected_instrument == instrument.rect)
+            if (selected_instrument == instrument.pen || selected_instrument == instrument.erase
+                || selected_instrument == instrument.line
+                || selected_instrument == instrument.rect || selected_instrument == instrument.ellipse)
             {
                 if (e.Button == MouseButtons.Left)
                 {
@@ -265,7 +312,7 @@ namespace kg1lab
 
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
-            if (selected_instrument == instrument.pen)
+            if (selected_instrument == instrument.pen || selected_instrument == instrument.erase)
             {
                 pictureBox1.Invalidate();
             }
@@ -277,7 +324,7 @@ namespace kg1lab
                     linePoints.Add(e.Location);
                 }
             }
-            else if (selected_instrument == instrument.rect)
+            else if (selected_instrument == instrument.rect || selected_instrument == instrument.ellipse)
             {
                 linePoints.Add(e.Location);
             }
@@ -310,6 +357,65 @@ namespace kg1lab
             if (Char.IsDigit(e.KeyChar)) return;
             else
                 e.Handled = true;
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+            if (pictureBox1.Image != null) //если в pictureBox есть изображение
+            {
+                //создание диалогового окна "Сохранить как..", для сохранения изображения
+                SaveFileDialog savedialog = new SaveFileDialog();
+                savedialog.Title = "Сохранить картинку как...";
+                //отображать ли предупреждение, если пользователь указывает имя уже существующего файла
+                savedialog.OverwritePrompt = true;
+                //отображать ли предупреждение, если пользователь указывает несуществующий путь
+                savedialog.CheckPathExists = true;
+                //список форматов файла, отображаемый в поле "Тип файла"
+                savedialog.Filter = "Image Files(*.BMP)|*.BMP|Image Files(*.JPG)|*.JPG|Image Files(*.GIF)|*.GIF|Image Files(*.PNG)|*.PNG|All files (*.*)|*.*";
+                //отображается ли кнопка "Справка" в диалоговом окне
+                savedialog.ShowHelp = true;
+                if (savedialog.ShowDialog() == DialogResult.OK) //если в диалоговом окне нажата кнопка "ОК"
+                {
+                    try
+                    {
+                        pictureBox1.Image.Save(savedialog.FileName, System.Drawing.Imaging.ImageFormat.Jpeg);
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Невозможно сохранить изображение", "Ошибка",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+            Bitmap image; //Bitmap для открываемого изображения
+
+            OpenFileDialog open_dialog = new OpenFileDialog(); //создание диалогового окна для выбора файла
+            open_dialog.Filter = "Image Files(*.BMP;*.JPG;*.GIF;*.PNG)|*.BMP;*.JPG;*.GIF;*.PNG|All files (*.*)|*.*"; //формат загружаемого файла
+            if (open_dialog.ShowDialog() == DialogResult.OK) //если в окне была нажата кнопка "ОК"
+            {
+                try
+                {
+                    image = new Bitmap(open_dialog.FileName);
+                    //вместо pictureBox1 укажите pictureBox, в который нужно загрузить изображение 
+                    this.pictureBox1.Size = image.Size;
+                    pictureBox1.Image = image;
+                    pictureBox1.Invalidate();
+                }
+                catch
+                {
+                    DialogResult rezult = MessageBox.Show("Невозможно открыть выбранный файл",
+                    "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void button12_Click(object sender, EventArgs e)
+        {
+            pictureBox1.Image = null;
         }
     }
 }
